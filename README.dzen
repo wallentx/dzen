@@ -450,9 +450,9 @@ Other:
 ------
 
     ^^tw()              draw to title window
-                       This command has some annoyances, as only 
+                       This command has some annoyances, as only
                        the input after the command will be drawn
-                       to the title window, so it is best used 
+                       to the title window, so it is best used
                        only once and as first command per line
                        Subject to be improved in the future.
 

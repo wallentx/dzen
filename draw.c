@@ -512,7 +512,6 @@ parse_line(const char *line, int lnr, int align, int reverse, int nodraw) {
 		h = dzen.font.height;
 		py = (dzen.line_height - h) / 2;
 		xorig = 0;
-		
 		if(lnr != -1) {
 			pm = XCreatePixmap(dzen.dpy, RootWindow(dzen.dpy, DefaultScreen(dzen.dpy)), dzen.slave_win.width,
 					dzen.line_height, DefaultDepth(dzen.dpy, dzen.screen));
@@ -739,7 +738,7 @@ parse_line(const char *line, int lnr, int align, int reverse, int nodraw) {
 
 								if(r != 2)
 									px = px+n_posx<0? 0 : px + n_posx;
-								if(r != 1) 
+								if(r != 1)
 									py += n_posy;
 							} else {
 								set_posy = 0;
@@ -896,7 +895,7 @@ parse_line(const char *line, int lnr, int align, int reverse, int nodraw) {
 				max_x = MAX(max_x, px);
 				if(!nobg)
 					setcolor(&pm, px, tw, lastfg, lastbg, reverse, nobg);
-				
+
 #ifndef DZEN_XFT
 				if(cur_fnt->set)
 					XmbDrawString(dzen.dpy, pm, cur_fnt->set,
