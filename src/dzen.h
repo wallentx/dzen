@@ -38,11 +38,11 @@
 
 #ifdef __APPLE__
 /* macOS compatibility definitions */
-#define Bool bool
-#define True true  
-#define False false
-#define DefaultScreen(dpy) 0
-#define DefaultVisual(dpy, screen) NULL
+#define Bool                         bool
+#define True                         true
+#define False                        false
+#define DefaultScreen(dpy)           0
+#define DefaultVisual(dpy, screen)   NULL
 #define DefaultColormap(dpy, screen) NULL
 #else
 /* X11 already provides these */
@@ -82,11 +82,11 @@ typedef struct _Sline Sline;
 
 struct Fnt {
 #ifdef __APPLE__
-    CTFontRef    font;
-    CGFloat      ascent;
-    CGFloat      descent;
-    CGFloat      height;
-    CGFloat      width;
+    CTFontRef font;
+    CGFloat   ascent;
+    CGFloat   descent;
+    CGFloat   height;
+    CGFloat   width;
 #else
     XFontStruct *xfont;
     XFontSet     set;
@@ -123,18 +123,18 @@ typedef struct {
 
 /* clickable areas */
 typedef struct _CLICK_A {
-    int    active;
-    int    button;
-    int    start_x;
-    int    end_x;
-    int    start_y;
-    int    end_y;
+    int active;
+    int button;
+    int start_x;
+    int end_x;
+    int start_y;
+    int end_y;
 #ifdef __APPLE__
-    void  *win; /* NSWindow* for macOS */
+    void *win; /* NSWindow* for macOS */
 #else
     Window win; //(line)window to which the action is attached
 #endif
-    char   cmd[1024];
+    char cmd[1024];
 } click_a;
 
 typedef struct _SENS_PER_WINDOW {
@@ -149,29 +149,29 @@ extern sens_w window_sens[2];
 struct TW {
     int x, y, width, height;
 
-    char    *name;
+    char *name;
 #ifdef __APPLE__
-    void    *win;      /* NSWindow* */
-    void    *drawable; /* CGContextRef or similar */
+    void *win; /* NSWindow* */
+    void *drawable; /* CGContextRef or similar */
 #else
     Window   win;
     Drawable drawable;
 #endif
-    char     alignment;
-    int      expand;
-    int      x_right_corner;
-    Bool     ishidden;
+    char alignment;
+    int  expand;
+    int  x_right_corner;
+    Bool ishidden;
 };
 
 /* slave window */
 struct SW {
     int x, y, width, height;
 
-    char     *name;
+    char *name;
 #ifdef __APPLE__
-    void     *win;      /* NSWindow* */
-    void    **line;     /* Array of NSWindow* pointers */
-    void    **drawable; /* Array of CGContextRef or similar */
+    void  *win; /* NSWindow* */
+    void **line; /* Array of NSWindow* pointers */
+    void **drawable; /* Array of CGContextRef or similar */
 #else
     Window    win;
     Window   *line;
@@ -207,9 +207,9 @@ struct DZEN {
 
 #ifdef __APPLE__
     /* macOS-specific members */
-    void         *app;         /* NSApplication* */
-    CGColorRef    bg_color;
-    CGColorRef    fg_color;
+    void           *app; /* NSApplication* */
+    CGColorRef      bg_color;
+    CGColorRef      fg_color;
     CGColorSpaceRef colorspace;
 #else
     /* sensitive areas */
@@ -228,8 +228,8 @@ struct DZEN {
     const char *fg;
     int         line_height;
 
-    Fnt     font;
-    Fnt     fnpl[64];
+    Fnt font;
+    Fnt fnpl[64];
 
     Bool          ispersistent;
     Bool          tsupdate;
@@ -266,15 +266,15 @@ extern void         drawbody(char *text);
 
 #ifdef __APPLE__
 /* macOS-specific functions */
-extern void         macos_init(void);
-extern void         macos_cleanup(void);
-extern void         macos_create_window(void);
-extern void         macos_event_loop(void);
-extern CGColorRef   macos_get_color(const char *str);
-extern void         macos_set_window_position(int x, int y);
-extern void         macos_show_window(void);
-extern void         macos_hide_window(void);
-extern void         macos_update_display_text(const char *text);
+extern void       macos_init(void);
+extern void       macos_cleanup(void);
+extern void       macos_create_window(void);
+extern void       macos_event_loop(void);
+extern CGColorRef macos_get_color(const char *str);
+extern void       macos_set_window_position(int x, int y);
+extern void       macos_show_window(void);
+extern void       macos_hide_window(void);
+extern void       macos_update_display_text(const char *text);
 #endif
 
 /* util.c */

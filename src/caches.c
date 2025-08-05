@@ -30,8 +30,9 @@ long get_color(const char *colstr) {
 #ifdef __APPLE__
     /* On macOS, use a simplified color system - convert to CGColor and return a handle */
     CGColorRef color = macos_get_color(colstr);
-    if (!color) return -1;
-    
+    if (!color)
+        return -1;
+
     /* For simplicity, just return 0 for valid colors on macOS */
     /* In a full implementation, we'd cache the CGColorRef */
     CGColorRelease(color);
