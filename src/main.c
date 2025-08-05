@@ -33,7 +33,7 @@ static void clean_up(void) {
 
     free_event_list();
     free_all_caches();
-    
+
 #ifdef __APPLE__
     macos_cleanup();
 #else
@@ -1073,7 +1073,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     init_all_caches();
-    
+
 #ifdef __APPLE__
     macos_create_window();
     macos_show_window();
