@@ -33,6 +33,10 @@ static void clean_up(void) {
 
     free_event_list();
     free_all_caches();
+    
+#ifdef __APPLE__
+    macos_cleanup();
+#else
 #ifndef HAVE_XFT
     if (dzen.font.set)
         XFreeFontSet(dzen.dpy, dzen.font.set);
@@ -57,6 +61,7 @@ static void clean_up(void) {
     XFreeCursor(dzen.dpy, dzen.cursor_hand);
     XDestroyWindow(dzen.dpy, dzen.title_win.win);
     XCloseDisplay(dzen.dpy);
+#endif
 }
 
 static void catch_sigusr1(int s) {
@@ -846,9 +851,13 @@ int main(int argc, char *argv[]) {
     dzen.line_height                            = 0;
     dzen.title_win.expand                       = noexpand;
 
-    /* Connect to X server */
+    /* Connect to display system */
+#ifdef __APPLE__
+    macos_init();
+#else
     x_connect();
     x_read_resources();
+#endif
 
     /* cmdline args */
     for (i = 1; i < argc; i++)
@@ -1004,8 +1013,13 @@ int main(int argc, char *argv[]) {
     if (!dzen.title_win.width)
         dzen.title_win.width = dzen.slave_win.width;
 
+#ifndef __APPLE__
     if (!setlocale(LC_ALL, "") || !XSupportsLocale())
         puts("dzen: locale not available, expect problems with fonts.\n");
+#else
+    if (!setlocale(LC_ALL, ""))
+        puts("dzen: locale not available, expect problems with fonts.\n");
+#endif
 
     if (action_string)
         fill_ev_table(action_string);
@@ -1046,6 +1060,9 @@ int main(int argc, char *argv[]) {
     if (dzen.slave_win.ishmenu && !dzen.slave_win.max_lines)
         dzen.slave_win.max_lines = 1;
 
+#ifdef __APPLE__
+    /* macOS doesn't need cursor management */
+#else
 #ifdef HAVE_XCURSOR
     dzen.cursor_arrow = XcursorLibraryLoadCursor(dzen.dpy, "left_ptr");
     dzen.cursor_hand  = XcursorLibraryLoadCursor(dzen.dpy, "hand2");
@@ -1053,8 +1070,14 @@ int main(int argc, char *argv[]) {
     dzen.cursor_arrow = XCreateFontCursor(dzen.dpy, XC_left_ptr);
     dzen.cursor_hand  = XCreateFontCursor(dzen.dpy, XC_hand2);
 #endif
+#endif
 
     init_all_caches();
+    
+#ifdef __APPLE__
+    macos_create_window();
+    macos_show_window();
+#else
     x_create_windows(use_ewmh_dock);
 
     if (!dzen.slave_win.ishmenu)
@@ -1064,6 +1087,7 @@ int main(int argc, char *argv[]) {
         for (i = 0; i < dzen.slave_win.max_lines; i++)
             XMapWindow(dzen.dpy, dzen.slave_win.line[i]);
     }
+#endif
 
     if (fnpre != NULL)
         font_preload(fnpre);
@@ -1071,7 +1095,11 @@ int main(int argc, char *argv[]) {
     do_action(onstart);
 
     /* main loop */
+#ifdef __APPLE__
+    macos_event_loop();
+#else
     event_loop();
+#endif
 
     do_action(onexit);
     clean_up();
