@@ -90,6 +90,23 @@ int get_tokval(const char *line, char **retdata);
 int get_token(const char *line, int *t, char **tval);
 
 static unsigned int textnw(Fnt *font, const char *text, unsigned int len) {
+#ifdef __APPLE__
+    if (!font || !font->font || !text || len == 0) return 0;
+    
+    CFStringRef string = CFStringCreateWithBytes(NULL, (const UInt8*)text, len, kCFStringEncodingUTF8, false);
+    if (!string) return 0;
+    
+    CFAttributedStringRef attrString = CFAttributedStringCreate(NULL, string, NULL);
+    CTLineRef line = CTLineCreateWithAttributedString(attrString);
+    
+    CGRect bounds = CTLineGetBoundsWithOptions(line, 0);
+    
+    CFRelease(line);
+    CFRelease(attrString);
+    CFRelease(string);
+    
+    return (unsigned int)bounds.size.width;
+#else
 #ifndef HAVE_XFT
     XRectangle r;
 
@@ -104,6 +121,12 @@ static unsigned int textnw(Fnt *font, const char *text, unsigned int len) {
         dzen.font.height = dzen.font.extents.height;
     return dzen.font.extents.xOff;
 #endif
+#endif
+}
+
+unsigned int textw(const char *text) {
+    if (!text) return 0;
+    return textnw(&dzen.font, text, strlen(text));
 }
 
 void drawtext(const char *text, int reverse, int line, int align) {
@@ -173,6 +196,52 @@ void free_cache(Cache **cache) {
 }
 
 void setfont(const char *fontstr) {
+#ifdef __APPLE__
+    /* macOS font handling using CoreText */
+    if (dzen.font.font) {
+        CFRelease(dzen.font.font);
+        dzen.font.font = NULL;
+    }
+    
+    // Create font from name or use default
+    CFStringRef fontName = NULL;
+    CGFloat fontSize = 12.0;
+    
+    // Parse simple font string (for now just use system font)
+    // In a full implementation, we'd parse X11 font strings
+    if (strstr(fontstr, "monaco") || strstr(fontstr, "Monaco")) {
+        fontName = CFSTR("Monaco");
+    } else if (strstr(fontstr, "helvetica") || strstr(fontstr, "Helvetica")) {
+        fontName = CFSTR("Helvetica");
+    } else {
+        fontName = CFSTR("Monaco"); // Default monospace font
+    }
+    
+    // Try to extract size from font string (simplified)
+    const char *size_str = strstr(fontstr, "-");
+    if (size_str) {
+        char *endptr;
+        double parsed_size = strtod(size_str + 1, &endptr);
+        if (parsed_size > 0 && parsed_size < 100) {
+            fontSize = (CGFloat)parsed_size;
+        }
+    }
+    
+    dzen.font.font = CTFontCreateWithName(fontName, fontSize, NULL);
+    if (!dzen.font.font) {
+        // Fallback to system font
+        dzen.font.font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, fontSize, NULL);
+    }
+    
+    if (dzen.font.font) {
+        dzen.font.ascent = CTFontGetAscent(dzen.font.font);
+        dzen.font.descent = CTFontGetDescent(dzen.font.font);
+        dzen.font.height = dzen.font.ascent + dzen.font.descent;
+        dzen.font.width = fontSize * 0.6; // Rough approximation for monospace
+    } else {
+        eprint("dzen: error, cannot load font: '%s'\n", fontstr);
+    }
+#else
 #ifndef HAVE_XFT
     char *def, **missing;
     int   i, n;
@@ -221,6 +290,7 @@ void setfont(const char *fontstr) {
                        &dzen.font.extents);
     dzen.font.height = dzen.font.xftfont->ascent + dzen.font.xftfont->descent;
     dzen.font.width  = (dzen.font.extents.width) / strlen(fontstr);
+#endif
 #endif
 }
 

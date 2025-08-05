@@ -274,6 +274,7 @@ extern CGColorRef   macos_get_color(const char *str);
 extern void         macos_set_window_position(int x, int y);
 extern void         macos_show_window(void);
 extern void         macos_hide_window(void);
+extern void         macos_update_display_text(const char *text);
 #endif
 
 /* util.c */

@@ -9,6 +9,10 @@
 #import <Cocoa/Cocoa.h>
 #import <CoreGraphics/CoreGraphics.h>
 #import <CoreText/CoreText.h>
+#include <sys/select.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <string.h>
 #include "dzen.h"
 
 /* DzenWindow - Custom NSWindow for borderless status bar */
@@ -247,10 +251,53 @@ void macos_event_loop(void) {
     @autoreleasepool {
         NSLog(@"Starting macOS event loop");
         
-        // Run the application event loop
-        // Note: This is a simplified approach. In a full implementation,
-        // we'd need to integrate this with stdin reading
-        [app run];
+        // Create a simple run loop that handles stdin and events
+        while (dzen.running) {
+            @autoreleasepool {
+                // Process any NSApplication events
+                NSEvent *event = [app nextEventMatchingMask:NSEventMaskAny
+                                                  untilDate:[NSDate distantPast]
+                                                     inMode:NSDefaultRunLoopMode
+                                                    dequeue:YES];
+                if (event) {
+                    [app sendEvent:event];
+                }
+                
+                // Check for stdin input using non-blocking read
+                fd_set readfds;
+                struct timeval timeout = {0, 10000}; // 10ms timeout
+                
+                FD_ZERO(&readfds);
+                FD_SET(STDIN_FILENO, &readfds);
+                
+                int result = select(STDIN_FILENO + 1, &readfds, NULL, NULL, &timeout);
+                if (result > 0 && FD_ISSET(STDIN_FILENO, &readfds)) {
+                    // Read a line from stdin
+                    char buffer[4096];
+                    if (fgets(buffer, sizeof(buffer), stdin)) {
+                        // Remove newline
+                        size_t len = strlen(buffer);
+                        if (len > 0 && buffer[len-1] == '\n') {
+                            buffer[len-1] = '\0';
+                        }
+                        
+                        // Update display with new text
+                        macos_update_display_text(buffer);
+                    } else {
+                        // EOF or error
+                        dzen.running = False;
+                    }
+                } else if (result < 0) {
+                    // Error
+                    dzen.running = False;
+                }
+                
+                // Small delay to prevent excessive CPU usage
+                usleep(1000); // 1ms
+            }
+        }
+        
+        NSLog(@"macOS event loop finished");
     }
 }
 

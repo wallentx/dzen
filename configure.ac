@@ -7,6 +7,7 @@ AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([foreign -Wall -Werror subdir-objects])
 
 AC_PROG_CC
+AC_PROG_OBJC
 AC_PROG_INSTALL
 
 # ---------------------------------------------

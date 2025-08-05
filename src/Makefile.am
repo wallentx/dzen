@@ -27,6 +27,6 @@ dzen2_LDADD    = $(LIBS)
 
 # macOS-specific flags
 if MACOS_BUILD
-dzen2_LDADD += -framework Cocoa -framework CoreGraphics -framework CoreText
+dzen2_LDFLAGS = -framework Cocoa -framework CoreGraphics -framework CoreText
 dzen2_CPPFLAGS += -D__APPLE__
 endif

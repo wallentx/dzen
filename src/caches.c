@@ -27,6 +27,16 @@ long get_color(const char *colstr) {
     if (!colstr || !*colstr)
         return -1;
 
+#ifdef __APPLE__
+    /* On macOS, use a simplified color system - convert to CGColor and return a handle */
+    CGColorRef color = macos_get_color(colstr);
+    if (!color) return -1;
+    
+    /* For simplicity, just return 0 for valid colors on macOS */
+    /* In a full implementation, we'd cache the CGColorRef */
+    CGColorRelease(color);
+    return 0;
+#else
     long *pixel_ptr = (long *)kvstore_find_or_create(color_store, colstr);
     if (!pixel_ptr)
         return -1; /* constructor not set or store is broken? */
@@ -45,6 +55,7 @@ long get_color(const char *colstr) {
 
     *pixel_ptr = color.pixel;
     return color.pixel;
+#endif
 }
 
 static void icon_destroy_item(void *value) {
