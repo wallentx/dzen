@@ -851,7 +851,7 @@ int main(int argc, char *argv[]) {
     dzen.line_height                            = 0;
     dzen.title_win.expand                       = noexpand;
 
-    /* Connect to display system */
+/* Connect to display system */
 #ifdef __APPLE__
     macos_init();
 #else
