@@ -7,6 +7,7 @@
 
 #include "dzen.h"
 #include "action.h"
+#include "font.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -146,14 +147,13 @@ void drawtext(const char *text, int reverse, int line, int align) {
     parse_line(text, line, align, reverse, 0);
 }
 
-/* Shared cache structure */
+/* Shared cache structure for color cache */
 typedef struct Cache {
     char         *key;
     void         *value;
     struct Cache *next;
 } Cache;
 
-Cache *font_cache  = NULL;
 Cache *color_cache = NULL;
 
 void *get_cached_value(Cache **cache, const char *key) {
@@ -173,17 +173,6 @@ void add_to_cache(Cache **cache, const char *key, void *value) {
     new_entry->value = value;
     new_entry->next  = *cache;
     *cache           = new_entry;
-}
-
-XftFont *get_cached_font(Display *display, int screen, const char *font_name) {
-    XftFont *font = get_cached_value(&font_cache, font_name);
-    if (!font) {
-        font = XftFontOpenName(display, screen, font_name);
-        if (font) {
-            add_to_cache(&font_cache, font_name, font);
-        }
-    }
-    return font;
 }
 
 void free_cache(Cache **cache) {

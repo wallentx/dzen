@@ -1,8 +1,6 @@
 # Ignore all files in the integration-tests directory
-integration-tests/*
-
-# Do not ignore files that start with 'reference_'
-!integration-tests/reference_*
+integration-tests/*/actual/*
+integration-tests/*/diffs/*
 
 # Ignore build and configuration artifacts
 /aclocal.m4

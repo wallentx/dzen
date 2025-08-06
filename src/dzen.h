@@ -5,6 +5,7 @@
  */
 
 #include "../config.h"
+#include "font.h"
 
 #ifdef __APPLE__
 /* macOS includes */
@@ -75,7 +76,6 @@ enum { ColFG, ColBG, ColLast };
 enum { noexpand, left, right, both };
 
 typedef struct DZEN   Dzen;
-typedef struct Fnt    Fnt;
 typedef struct TW     TWIN;
 typedef struct SW     SWIN;
 typedef struct _Sline Sline;
@@ -257,12 +257,10 @@ void x_draw_body(void);
 #endif
 
 /* draw.c */
-extern void         drawtext(const char *text, int reverse, int line, int align);
-extern char        *parse_line(const char *text, int linenr, int align, int reverse, int nodraw);
-extern void         setfont(const char *fontstr); /* sets global font */
-extern unsigned int textw(const char *text); /* returns width of text in px */
-extern void         drawheader(const char *text);
-extern void         drawbody(char *text);
+extern void  drawtext(const char *text, int reverse, int line, int align);
+extern char *parse_line(const char *text, int linenr, int align, int reverse, int nodraw);
+extern void  drawheader(const char *text);
+extern void  drawbody(char *text);
 
 #ifdef __APPLE__
 /* macOS-specific functions */

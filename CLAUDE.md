@@ -30,15 +30,22 @@ make distclean  # also removes configure-generated files
 The project uses a screenshot-based integration test system:
 
 ```bash
-# Run all integration tests
-./test_e2e
+# Run integration tests with a specific test file
+./test_e2e TESTS.md
+
+# Run custom test files
+./test_e2e custom_tests.md
 ```
 
-Tests are defined in `TESTS.md` and compare screenshots against reference images in `integration-tests/`.
-Files `reference_*.png` are reference screenshots automatically created for TESTS.md and should be committed after adding new tests.
-For example, if reference screenshot name is `./integration-tests/reference_05-position-padding.png`
-Than actual screenshot will be stored without `reference_` prefix as `integration-tests/05-position-padding.png`.
-Diff between actual and reference stored without prefix `reference_` but with prefix `diff_` - `integration-tests/diffs/diff_05-position-padding.png`.
+The test_e2e script requires a test file parameter. Screenshots are organized by test file:
+- Expected screenshots: `integration-tests/<test_basename>/expected/`
+- Actual screenshots: `integration-tests/<test_basename>/actual/`
+- Diff images: `integration-tests/<test_basename>/diffs/`
+
+For example, when running `./test_e2e TESTS.md`:
+- Expected: `integration-tests/TESTS/expected/05-position-padding.png`
+- Actual: `integration-tests/TESTS/actual/05-position-padding.png`
+- Diff: `integration-tests/TESTS/diffs/diff_05-position-padding.png`
 
 ### Testing E2E Architecture
 
@@ -132,13 +139,75 @@ This fork adds caching layers:
 1. **In-text commands**: Add parsing logic to `draw.c:parse_line()`
 2. **Actions**: Define in `action.h` and implement in `action.c`
 3. **Configuration options**: Add to `dzen.h:Dzen` struct and parse in `main.c`
+4. **Font features**: Modify `src/font.c` and `src/font.h` for font-related functionality
+
+### Font Module
+
+The font functionality has been extracted into a separate module consisting of:
+- **`src/font.h`**: Font structure definitions and function declarations
+- **`src/font.c`**: Font management implementation with XFT/non-XFT support
+
+**Key functions:**
+- `font_init()`: Initialize font system
+- `font_cleanup()`: Clean up font resources
+- `setfont(fontstr)`: Set current font (supports both XFT and X11 fonts)
+- `textnw(font, text, len)`: Calculate text width
+- `font_preload(fonts)`: Preload fonts for non-XFT builds (comma-separated list)
+
+**Features:**
+- Conditional compilation for XFT vs non-XFT builds
+- Font caching for XFT builds (improves performance)
+- Font preloading for non-XFT builds (allows `^fn(dfnt0)`, `^fn(dfnt1)`, etc.)
+- Automatic cleanup on program exit
 
 ### Testing Changes
 
 Always run `make test` before committing. If visual output changes are intentional:
 ```bash
-./test_e2e
-git add integration-tests/reference_*.png
+./test_e2e TESTS.md
+git add integration-tests/TESTS/expected/*.png
+```
+
+### Testing Font Module
+
+A dedicated test script `test_font_module` verifies font functionality:
+
+```bash
+# Test current build configuration (auto-detects XFT vs non-XFT)
+./test_font_module
+```
+
+**What it tests:**
+- Basic font functionality (font switching with `^fn()`)
+- Font and color combinations
+- Font preloading (non-XFT builds only)
+- Screenshot-based verification (saved to `./font_test_screenshots/`)
+
+**Test different configurations:**
+```bash
+# Test without XFT (uses X11 core fonts)
+make distclean
+./configure --disable-xft --enable-xpm --enable-xinerama --enable-xcursor
+make
+./test_font_module
+
+# Test with XFT (uses modern font rendering)
+make distclean  
+./configure --enable-xft --enable-xpm --enable-xinerama --enable-xcursor
+make
+./test_font_module
+```
+
+**Manual font testing examples:**
+```bash
+# XFT build - test different XFT fonts
+echo "XFT: ^fn(monospace-12)Monospace^fn() ^fn(serif-14)Serif^fn() Normal" | ./src/dzen2 -p
+
+# Non-XFT build - test X11 fonts
+echo "X11: ^fn(8x16)Large^fn() ^fn(6x13)Small^fn() Normal" | ./src/dzen2 -p -fn "fixed"
+
+# Non-XFT build - test font preloading
+echo "Preloaded: ^fn(dfnt0)Font0^fn() ^fn(dfnt1)Font1^fn() Normal" | ./src/dzen2 -p -fn-preload "6x13,8x16"
 ```
 
 ### Common Tasks
@@ -203,8 +272,7 @@ ulimit -n 65536  # Set before running valgrind if you get "Private file creation
 
 ## Code Style
 
-- Use tabs for indentation (width 8)
-- K&R style braces
-- Functions: `return_type function_name(args)`
-- Keep line length under 100 characters
-- Run `clang-format` if `.clang-format` exis
+- Keep line length under 120 characters
+- Use `make format` after finishing modifying all files or before committing
+- Ensure new files are part of distribution, file must be included in Makefile.am (for example EXTRA_DIST)
+
