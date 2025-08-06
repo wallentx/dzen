@@ -1061,7 +1061,6 @@ int main(int argc, char *argv[]) {
         dzen.slave_win.max_lines = 1;
 
 #ifdef __APPLE__
-    /* macOS doesn't need cursor management */
 #else
 #ifdef HAVE_XCURSOR
     dzen.cursor_arrow = XcursorLibraryLoadCursor(dzen.dpy, "left_ptr");
