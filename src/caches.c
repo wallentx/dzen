@@ -8,9 +8,18 @@
 #include "dzen.h"
 #include "kvstore.h"
 
+#ifndef __APPLE__
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#ifdef HAVE_XPM
+#include <X11/xpm.h>
+#endif
+#endif
+
 static KeyValueStore *color_store;
 static KeyValueStore *icon_store;
 
+#ifndef __APPLE__
 /*
  * New constructor for color items.  This is used by kvstore_find_or_create
  * whenever a key is not found in the store.  We return a pointer to a long
@@ -22,21 +31,25 @@ static void *color_create_item(void) {
         *pixel_ptr = -1;
     return pixel_ptr;
 }
+#endif
 
 long get_color(const char *colstr) {
     if (!colstr || !*colstr)
         return -1;
 
 #ifdef __APPLE__
-    /* On macOS, use a simplified color system - convert to CGColor and return a handle */
+    /* On macOS, we don't deal with X color pixels.
+     * The drawing functions use CGColorRefs directly.
+     * This function is called to pre-cache colors, but for macOS
+     * we can just validate the color string and return a placeholder.
+     * Returning 0 for success, -1 for failure.
+     */
     CGColorRef color = macos_get_color(colstr);
-    if (!color)
-        return -1;
-
-    /* For simplicity, just return 0 for valid colors on macOS */
-    /* In a full implementation, we'd cache the CGColorRef */
-    CGColorRelease(color);
-    return 0;
+    if (color) {
+        CGColorRelease(color);
+        return 0;
+    }
+    return -1;
 #else
     long *pixel_ptr = (long *)kvstore_find_or_create(color_store, colstr);
     if (!pixel_ptr)
@@ -59,6 +72,7 @@ long get_color(const char *colstr) {
 #endif
 }
 
+#ifndef __APPLE__
 static void icon_destroy_item(void *value) {
     Icon *icon = (Icon *)value;
 
@@ -174,8 +188,13 @@ static int icon_load_xbm(const char *path, Icon *icon) {
     }
     return 1; /* failure */
 }
+#endif
 
 Icon *get_icon(const char *path) {
+#ifdef __APPLE__
+    (void)path;
+    return NULL;
+#else
     if (!path || !*path)
         return NULL;
 
@@ -217,14 +236,23 @@ Icon *get_icon(const char *path) {
     kvstore_set(icon_store, expanded_path, icon);
     free(expanded_path);
     return icon;
+#endif
 }
 
 void init_all_caches() {
+#ifdef __APPLE__
+    /* macOS doesn't use these caches yet */
+#else
     icon_store  = kvstore_create(icon_destroy_item, NULL);
     color_store = kvstore_create(NULL, color_create_item);
+#endif
 }
 
 void free_all_caches() {
+#ifdef __APPLE__
+    /* macOS doesn't use these caches yet */
+#else
     kvstore_destroy(icon_store);
     kvstore_destroy(color_store);
+#endif
 }

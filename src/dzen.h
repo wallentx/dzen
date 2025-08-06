@@ -11,7 +11,6 @@
 /* macOS includes */
 #include <CoreGraphics/CoreGraphics.h>
 #include <CoreText/CoreText.h>
-#include <Cocoa/Cocoa.h>
 #else
 /* X11 includes */
 #include <X11/Xlib.h>
@@ -79,27 +78,6 @@ typedef struct DZEN   Dzen;
 typedef struct TW     TWIN;
 typedef struct SW     SWIN;
 typedef struct _Sline Sline;
-
-struct Fnt {
-#ifdef __APPLE__
-    CTFontRef font;
-    CGFloat   ascent;
-    CGFloat   descent;
-    CGFloat   height;
-    CGFloat   width;
-#else
-    XFontStruct *xfont;
-    XFontSet     set;
-    int          ascent;
-    int          descent;
-    int          height;
-#ifdef HAVE_XFT
-    XftFont   *xftfont;
-    XGlyphInfo extents;
-    int        width;
-#endif
-#endif /* __APPLE__ */
-};
 
 typedef struct {
 #ifdef __APPLE__

@@ -1,4 +1,57 @@
 
+#ifdef __APPLE__
+/*
+ * macOS-specific drawing implementation for dzen2
+ */
+#include "dzen.h"
+#include "action.h"
+#include "font.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/* Dummy implementations for macOS, to be filled in */
+
+unsigned int textw(const char *text) {
+    if (!text)
+        return 0;
+    return textnw(&dzen.font, text, strlen(text));
+}
+
+void drawtext(const char *text, int reverse, int line, int align) {
+    // TODO: macOS implementation
+    (void)text;
+    (void)reverse;
+    (void)line;
+    (void)align;
+}
+
+char *parse_line(const char *line, int lnr, int align, int reverse, int nodraw) {
+    // TODO: macOS implementation
+    (void)line;
+    (void)lnr;
+    (void)align;
+    (void)reverse;
+    if (nodraw) {
+        return strdup("");
+    }
+    return NULL;
+}
+
+void drawheader(const char *text) {
+    // TODO: macOS implementation
+    if (text) {
+        macos_update_display_text(text);
+    }
+}
+
+void drawbody(char *text) {
+    // For now, treat body text as header text
+    drawheader(text);
+}
+
+#else
 /*
 * (C)opyright 2007-2009 Robert Manea <rob dot manea at gmail dot com>
 * See LICENSE file for license details.
@@ -6,7 +59,7 @@
 */
 
 #include "dzen.h"
-#include "action.h"
+#include "action.hh"
 #include "font.h"
 
 #include <stdio.h>
@@ -91,25 +144,6 @@ int get_tokval(const char *line, char **retdata);
 int get_token(const char *line, int *t, char **tval);
 
 static unsigned int textnw(Fnt *font, const char *text, unsigned int len) {
-#ifdef __APPLE__
-    if (!font || !font->font || !text || len == 0)
-        return 0;
-
-    CFStringRef string = CFStringCreateWithBytes(NULL, (const UInt8 *)text, len, kCFStringEncodingUTF8, false);
-    if (!string)
-        return 0;
-
-    CFAttributedStringRef attrString = CFAttributedStringCreate(NULL, string, NULL);
-    CTLineRef             line       = CTLineCreateWithAttributedString(attrString);
-
-    CGRect bounds = CTLineGetBoundsWithOptions(line, 0);
-
-    CFRelease(line);
-    CFRelease(attrString);
-    CFRelease(string);
-
-    return (unsigned int)bounds.size.width;
-#else
 #ifndef HAVE_XFT
     XRectangle r;
 
@@ -123,7 +157,6 @@ static unsigned int textnw(Fnt *font, const char *text, unsigned int len) {
     if (dzen.font.extents.height > dzen.font.height)
         dzen.font.height = dzen.font.extents.height;
     return dzen.font.extents.xOff;
-#endif
 #endif
 }
 
@@ -188,52 +221,6 @@ void free_cache(Cache **cache) {
 }
 
 void setfont(const char *fontstr) {
-#ifdef __APPLE__
-    /* macOS font handling using CoreText */
-    if (dzen.font.font) {
-        CFRelease(dzen.font.font);
-        dzen.font.font = NULL;
-    }
-
-    // Create font from name or use default
-    CFStringRef fontName = NULL;
-    CGFloat     fontSize = 12.0;
-
-    // Parse simple font string (for now just use system font)
-    // In a full implementation, we'd parse X11 font strings
-    if (strstr(fontstr, "monaco") || strstr(fontstr, "Monaco")) {
-        fontName = CFSTR("Monaco");
-    } else if (strstr(fontstr, "helvetica") || strstr(fontstr, "Helvetica")) {
-        fontName = CFSTR("Helvetica");
-    } else {
-        fontName = CFSTR("Monaco"); // Default monospace font
-    }
-
-    // Try to extract size from font string (simplified)
-    const char *size_str = strstr(fontstr, "-");
-    if (size_str) {
-        char  *endptr;
-        double parsed_size = strtod(size_str + 1, &endptr);
-        if (parsed_size > 0 && parsed_size < 100) {
-            fontSize = (CGFloat)parsed_size;
-        }
-    }
-
-    dzen.font.font = CTFontCreateWithName(fontName, fontSize, NULL);
-    if (!dzen.font.font) {
-        // Fallback to system font
-        dzen.font.font = CTFontCreateUIFontForLanguage(kCTFontUIFontSystem, fontSize, NULL);
-    }
-
-    if (dzen.font.font) {
-        dzen.font.ascent  = CTFontGetAscent(dzen.font.font);
-        dzen.font.descent = CTFontGetDescent(dzen.font.font);
-        dzen.font.height  = dzen.font.ascent + dzen.font.descent;
-        dzen.font.width   = fontSize * 0.6; // Rough approximation for monospace
-    } else {
-        eprint("dzen: error, cannot load font: '%s'\n", fontstr);
-    }
-#else
 #ifndef HAVE_XFT
     char *def, **missing;
     int   i, n;
@@ -282,7 +269,6 @@ void setfont(const char *fontstr) {
                        &dzen.font.extents);
     dzen.font.height = dzen.font.xftfont->ascent + dzen.font.xftfont->descent;
     dzen.font.width  = (dzen.font.extents.width) / strlen(fontstr);
-#endif
 #endif
 }
 
@@ -1007,71 +993,71 @@ int parse_non_drawing_commands(char *text) {
     if (!text)
         return 1;
 
-    if (!strncmp(text, "^togglecollapse()", strlen("^togglecollapse()"))) {
+    if (!strncmp(text, "^togglecollapse()", strlen("^togglecollapse()\n"))) {
         a_togglecollapse(NULL);
         return 0;
     }
-    if (!strncmp(text, "^collapse()", strlen("^collapse()"))) {
+    if (!strncmp(text, "^collapse()", strlen("^collapse()\n"))) {
         a_collapse(NULL);
         return 0;
     }
-    if (!strncmp(text, "^uncollapse()", strlen("^uncollapse()"))) {
+    if (!strncmp(text, "^uncollapse()", strlen("^uncollapse()\n"))) {
         a_uncollapse(NULL);
         return 0;
     }
 
-    if (!strncmp(text, "^togglestick()", strlen("^togglestick()"))) {
+    if (!strncmp(text, "^togglestick()", strlen("^togglestick()\n"))) {
         a_togglestick(NULL);
         return 0;
     }
-    if (!strncmp(text, "^stick()", strlen("^stick()"))) {
+    if (!strncmp(text, "^stick()", strlen("^stick()\n"))) {
         a_stick(NULL);
         return 0;
     }
-    if (!strncmp(text, "^unstick()", strlen("^unstick()"))) {
+    if (!strncmp(text, "^unstick()", strlen("^unstick()\n"))) {
         a_unstick(NULL);
         return 0;
     }
 
-    if (!strncmp(text, "^togglehide()", strlen("^togglehide()"))) {
+    if (!strncmp(text, "^togglehide()", strlen("^togglehide()\n"))) {
         a_togglehide(NULL);
         return 0;
     }
-    if (!strncmp(text, "^hide()", strlen("^hide()"))) {
+    if (!strncmp(text, "^hide()", strlen("^hide()\n"))) {
         a_hide(NULL);
         return 0;
     }
-    if (!strncmp(text, "^unhide()", strlen("^unhide()"))) {
+    if (!strncmp(text, "^unhide()", strlen("^unhide()\n"))) {
         a_unhide(NULL);
         return 0;
     }
 
-    if (!strncmp(text, "^raise()", strlen("^raise()"))) {
+    if (!strncmp(text, "^raise()", strlen("^raise()\n"))) {
         a_raise(NULL);
         return 0;
     }
 
-    if (!strncmp(text, "^lower()", strlen("^lower()"))) {
+    if (!strncmp(text, "^lower()", strlen("^lower()\n"))) {
         a_lower(NULL);
         return 0;
     }
 
-    if (!strncmp(text, "^scrollhome()", strlen("^scrollhome()"))) {
+    if (!strncmp(text, "^scrollhome()", strlen("^scrollhome()\n"))) {
         a_scrollhome(NULL);
         return 0;
     }
 
-    if (!strncmp(text, "^scrollend()", strlen("^scrollend()"))) {
+    if (!strncmp(text, "^scrollend()", strlen("^scrollend()\n"))) {
         a_scrollend(NULL);
         return 0;
     }
 
-    if (!strncmp(text, "^exit()", strlen("^exit()"))) {
+    if (!strncmp(text, "^exit()", strlen("^exit()\n"))) {
         a_exit(NULL);
         return 0;
     }
 
-    if (!strncmp(text, "^normfg(", strlen("^normfg("))) {
+    if (!strncmp(text, "^normfg(", strlen("^normfg(\n"))) {
         char *tval = extract_between_parentheses(text);
         if (tval) {
             if ((dzen.norm[ColFG] = get_color(tval)) == ~0lu)
@@ -1086,7 +1072,7 @@ int parse_non_drawing_commands(char *text) {
         return 0;
     }
 
-    if (!strncmp(text, "^normbg(", strlen("^normbg("))) {
+    if (!strncmp(text, "^normbg(", strlen("^normbg(\n"))) {
         char *tval = extract_between_parentheses(text);
         if (tval) {
             if ((dzen.norm[ColBG] = get_color(tval)) == ~0lu)
@@ -1101,7 +1087,7 @@ int parse_non_drawing_commands(char *text) {
         return 0;
     }
 
-    if (!strncmp(text, "^normfn(", strlen("^normfn("))) {
+    if (!strncmp(text, "^normfn(", strlen("^normfn(\n"))) {
         char *tval = extract_between_parentheses(text);
         if (tval) {
             free((char *)dzen.fnt);
@@ -1169,3 +1155,4 @@ void drawbody(char *text) {
         dzen.slave_win.tcnt++;
     }
 }
+#endif

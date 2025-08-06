@@ -10,16 +10,25 @@
 #define FONT_H
 
 #include "../config.h"
+
+#ifdef __APPLE__
+#include <ApplicationServices/ApplicationServices.h>
+#include <CoreText/CoreText.h>
+#else
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-
 #ifdef HAVE_XFT
 #include <X11/Xft/Xft.h>
 #endif
+#endif
 
 typedef struct Fnt {
+#ifdef __APPLE__
+    CTFontRef ctfont;
+#else
     XFontStruct *xfont;
     XFontSet     set;
+#endif
     int          ascent;
     int          descent;
     int          height;
