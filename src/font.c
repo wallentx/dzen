@@ -33,12 +33,14 @@ unsigned int textnw(Fnt *font, const char *text, unsigned int len) {
     if (!font || !font->ctfont || !text || len == 0)
         return 0;
 
-    CFStringRef string = CFStringCreateWithBytes(kCFAllocatorDefault, (const UInt8 *)text, len, kCFStringEncodingUTF8, false);
-    if (!string) return 0;
+    CFStringRef string =
+        CFStringCreateWithBytes(kCFAllocatorDefault, (const UInt8 *)text, len, kCFStringEncodingUTF8, false);
+    if (!string)
+        return 0;
 
-    CFDictionaryRef attributes = CFDictionaryCreate(kCFAllocatorDefault,
-        (const void**)&kCTFontAttributeName, (const void**)&font->ctfont, 1,
-        &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+    CFDictionaryRef attributes = CFDictionaryCreate(kCFAllocatorDefault, (const void **)&kCTFontAttributeName,
+                                                    (const void **)&font->ctfont, 1, &kCFTypeDictionaryKeyCallBacks,
+                                                    &kCFTypeDictionaryValueCallBacks);
     if (!attributes) {
         CFRelease(string);
         return 0;
@@ -48,12 +50,14 @@ unsigned int textnw(Fnt *font, const char *text, unsigned int len) {
     CFRelease(string);
     CFRelease(attributes);
 
-    if (!attrString) return 0;
+    if (!attrString)
+        return 0;
 
     CTLineRef line = CTLineCreateWithAttributedString(attrString);
     CFRelease(attrString);
 
-    if (!line) return 0;
+    if (!line)
+        return 0;
 
     double width = CTLineGetTypographicBounds(line, NULL, NULL, NULL);
     CFRelease(line);
@@ -69,29 +73,29 @@ void setfont(const char *fontstr) {
 
     // For macOS, we'll parse a simpler font string format: "Family-Size"
     // e.g., "Monaco-12"
-    char family_name[128] = "Monaco"; // Default
-    double font_size = 12.0;      // Default
+    char   family_name[128] = "Monaco"; // Default
+    double font_size        = 12.0; // Default
 
     if (fontstr) {
         const char *dash = strrchr(fontstr, '-');
         if (dash) {
             strncpy(family_name, fontstr, dash - fontstr);
             family_name[dash - fontstr] = '\0';
-            font_size = atof(dash + 1);
+            font_size                   = atof(dash + 1);
         }
     }
 
     CFStringRef fontNameRef = CFStringCreateWithCString(NULL, family_name, kCFStringEncodingUTF8);
-    dzen.font.ctfont = CTFontCreateWithName(fontNameRef, font_size, NULL);
+    dzen.font.ctfont        = CTFontCreateWithName(fontNameRef, font_size, NULL);
     CFRelease(fontNameRef);
 
     if (!dzen.font.ctfont) {
         eprint("dzen: error, cannot load font: '%s'\n", fontstr);
     }
 
-    dzen.font.ascent = CTFontGetAscent(dzen.font.ctfont);
+    dzen.font.ascent  = CTFontGetAscent(dzen.font.ctfont);
     dzen.font.descent = CTFontGetDescent(dzen.font.ctfont);
-    dzen.font.height = dzen.font.ascent + dzen.font.descent;
+    dzen.font.height  = dzen.font.ascent + dzen.font.descent;
 }
 
 void font_preload_single(const char *fontstr, int p) {

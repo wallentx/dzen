@@ -29,9 +29,9 @@ typedef struct Fnt {
     XFontStruct *xfont;
     XFontSet     set;
 #endif
-    int          ascent;
-    int          descent;
-    int          height;
+    int ascent;
+    int descent;
+    int height;
 #ifdef HAVE_XFT
     XftFont   *xftfont;
     XGlyphInfo extents;
