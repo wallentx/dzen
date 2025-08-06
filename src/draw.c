@@ -140,12 +140,6 @@ struct command_lookup cmd_lookup_table[] = {
 /* positioning helpers */
 enum sctype { LOCK_X, UNLOCK_X, TOP, BOTTOM, CENTER, LEFT, RIGHT };
 
-unsigned int textw(const char *text) {
-    if (!text)
-        return 0;
-    return textnw(&dzen.font, text, strlen(text));
-}
-
 void drawtext(const char *text, int reverse, int line, int align) {
     if (!reverse) {
         XSetForeground(dzen.dpy, dzen.gc, dzen.norm[ColBG]);

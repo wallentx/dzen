@@ -44,6 +44,7 @@ void         font_init(void);
 void         font_cleanup(void);
 void         setfont(const char *fontstr);
 unsigned int textnw(Fnt *font, const char *text, unsigned int len);
+unsigned int textw(const char *text);
 
 /* Font preloading functions */
 void font_preload(char *s);

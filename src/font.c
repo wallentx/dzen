@@ -305,4 +305,10 @@ void font_preload(char *s) {
     }
 #endif
 }
+
+unsigned int textw(const char *text) {
+    if (!text)
+        return 0;
+    return textnw(&dzen.font, text, strlen(text));
+}
 #endif

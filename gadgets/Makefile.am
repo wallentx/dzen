@@ -18,11 +18,12 @@ gcpubar_LDADD = $(LIBS)
 
 # textwidth
 textwidth_SOURCES = textwidth.c
+textwidth_CPPFLAGS = -I$(top_srcdir)/src
 if MACOS_BUILD
 textwidth_LDADD = ../src/dzen2-font.o ../src/dzen2-util.o
 textwidth_LDFLAGS = -framework Cocoa -framework CoreGraphics -framework CoreText
 else
-textwidth_LDADD = $(LIBS)
+textwidth_LDADD = ../src/dzen2-font.o ../src/dzen2-util.o $(LIBS)
 endif
 
 dist_doc_DATA = README.dbar.md \
