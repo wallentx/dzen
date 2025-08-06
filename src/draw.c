@@ -59,7 +59,7 @@ void drawbody(char *text) {
 */
 
 #include "dzen.h"
-#include "action.hh"
+#include "action.h"
 #include "font.h"
 
 #include <stdio.h>
