@@ -140,6 +140,26 @@ struct command_lookup cmd_lookup_table[] = {
 /* positioning helpers */
 enum sctype { LOCK_X, UNLOCK_X, TOP, BOTTOM, CENTER, LEFT, RIGHT };
 
+unsigned int textw(const char *text) {
+    if (!text)
+        return 0;
+    return textnw(&dzen.font, text, strlen(text));
+}
+
+void drawtext(const char *text, int reverse, int line, int align) {
+    if (!reverse) {
+        XSetForeground(dzen.dpy, dzen.gc, dzen.norm[ColBG]);
+        XFillRectangle(dzen.dpy, dzen.slave_win.drawable[line], dzen.gc, 0, 0, dzen.w, dzen.h);
+        XSetForeground(dzen.dpy, dzen.gc, dzen.norm[ColFG]);
+    } else {
+        XSetForeground(dzen.dpy, dzen.rgc, dzen.norm[ColFG]);
+        XFillRectangle(dzen.dpy, dzen.slave_win.drawable[line], dzen.rgc, 0, 0, dzen.w, dzen.h);
+        XSetForeground(dzen.dpy, dzen.rgc, dzen.norm[ColBG]);
+    }
+
+    parse_line(text, line, align, reverse, 0);
+}
+
 int get_tokval(const char *line, char **retdata) {
     int  i;
     char tokval[ARGLEN];
