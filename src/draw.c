@@ -143,7 +143,7 @@ enum sctype { LOCK_X, UNLOCK_X, TOP, BOTTOM, CENTER, LEFT, RIGHT };
 int get_tokval(const char *line, char **retdata);
 int get_token(const char *line, int *t, char **tval);
 
-static unsigned int textnw(Fnt *font, const char *text, unsigned int len) {
+unsigned int textnw(Fnt *font, const char *text, unsigned int len) {
 #ifndef HAVE_XFT
     XRectangle r;
 
