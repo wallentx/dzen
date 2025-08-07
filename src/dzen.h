@@ -251,6 +251,7 @@ extern void       macos_set_window_position(int x, int y);
 extern void       macos_show_window(void);
 extern void       macos_hide_window(void);
 extern void       macos_update_display_text(const char *text);
+extern void       macos_update_colors(void);
 #endif
 
 /* util.c */

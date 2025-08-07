@@ -1,4 +1,3 @@
-
 #ifdef __APPLE__
 /*
  * macOS-specific drawing implementation for dzen2
@@ -55,7 +54,7 @@ void drawbody(char *text) {
 /*
 * (C)opyright 2007-2009 Robert Manea <rob dot manea at gmail dot com>
 * See LICENSE file for license details.
-*
+* 
 */
 
 #include "dzen.h"
@@ -88,21 +87,21 @@ sens_w window_sens[2];
 
 /* command types for the in-text parser */
 enum ctype {
-    bg,
-    fg,
-    icon,
-    rect,
-    recto,
-    circle,
-    circleo,
-    pos,
-    abspos,
-    titlewin,
-    ibg,
-    fn,
-    fixpos,
-    ca,
-    ba,
+    bg, 
+    fg, 
+    icon, 
+    rect, 
+    recto, 
+    circle, 
+    circleo, 
+    pos, 
+    abspos, 
+    titlewin, 
+    ibg, 
+    fn, 
+    fixpos, 
+    ca, 
+    ba, 
     leftalign,
     centeralign,
     rightalign

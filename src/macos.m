@@ -311,4 +311,23 @@ void macos_update_display_text(const char *text) {
     }
 }
 
+void macos_update_colors(void) {
+    @autoreleasepool {
+        if (dzen.bg_color) {
+            CGColorRelease(dzen.bg_color);
+        }
+        if (dzen.fg_color) {
+            CGColorRelease(dzen.fg_color);
+        }
+        dzen.bg_color = macos_get_color(dzen.bg);
+        dzen.fg_color = macos_get_color(dzen.fg);
+
+        if (main_view) {
+            [main_view setBackgroundColor:[NSColor colorWithCGColor:dzen.bg_color]];
+            [main_view setForegroundColor:[NSColor colorWithCGColor:dzen.fg_color]];
+            [main_view setNeedsDisplay:YES];
+        }
+    }
+}
+
 #endif /* __APPLE__ */
