@@ -1,11 +1,11 @@
 /*
  * (C)opyright 2007-2009 Robert Manea <rob dot manea at gmail dot com>
- * See LICENSE file for license details.
- *
+ * See LICENSE file for license details. 
  */
 
 #include "dzen.h"
 #include "action.h"
+#include "font.h"
 
 #include <ctype.h>
 #include <locale.h>
@@ -20,6 +20,20 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
+#ifndef __APPLE__
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/Xresource.h>
+#include <X11/Xos.h>
+#include <X11/Xatom.h>
+#ifdef HAVE_XCURSOR
+#include <X11/Xcursor/Xcursor.h>
+#endif
+#ifdef HAVE_XINERAMA
+#include <X11/extensions/Xinerama.h>
+#endif
+#endif
+
 #ifndef HOST_NAME_MAX
 #define HOST_NAME_MAX 255
 #endif
@@ -33,13 +47,11 @@ static void clean_up(void) {
 
     free_event_list();
     free_all_caches();
-#ifndef HAVE_XFT
-    if (dzen.font.set)
-        XFreeFontSet(dzen.dpy, dzen.font.set);
-    else
-        XFreeFont(dzen.dpy, dzen.font.xfont);
-    FcFini();
-#endif
+
+#ifdef __APPLE__
+    macos_cleanup();
+#else
+    font_cleanup();
 
     XFreePixmap(dzen.dpy, dzen.title_win.drawable);
     if (dzen.slave_win.max_lines) {
@@ -57,6 +69,7 @@ static void clean_up(void) {
     XFreeCursor(dzen.dpy, dzen.cursor_hand);
     XDestroyWindow(dzen.dpy, dzen.title_win.win);
     XCloseDisplay(dzen.dpy);
+#endif
 }
 
 static void catch_sigusr1(int s) {
@@ -158,6 +171,7 @@ static int read_stdin(void) {
     return 0;
 }
 
+#ifndef __APPLE__
 static void x_hilight_line(int line) {
     drawtext(dzen.slave_win.tbuf[line + dzen.slave_win.first_line_vis], 1, line, dzen.slave_win.alignment);
     XCopyArea(dzen.dpy, dzen.slave_win.drawable[line], dzen.slave_win.line[line], dzen.gc, 0, 0, dzen.slave_win.width,
@@ -466,8 +480,8 @@ static void x_create_windows(int use_ewmh_dock) {
         /* horizontal menu mode */
         if (dzen.slave_win.ishmenu) {
             /* calculate width of menuentries - this is a very simple
-			 * approach but works well for general cases.
-			 */
+		 * approach but works well for general cases.
+		 */
             int ew                  = dzen.slave_win.width / dzen.slave_win.max_lines;
             int r                   = dzen.slave_win.width - ew * dzen.slave_win.max_lines;
             dzen.slave_win.issticky = True;
@@ -494,8 +508,8 @@ static void x_create_windows(int use_ewmh_dock) {
                                                        CWOverrideRedirect | CWBackPixmap | CWEventMask, &wa);
 
             /* As we don't use the title window in this mode,
-			 * we reuse its width value
-			 */
+		 * we reuse its width value
+		 */
             dzen.title_win.width = dzen.slave_win.width;
             dzen.slave_win.width = ew + r;
         }
@@ -703,8 +717,8 @@ static void handle_newl(void) {
 
         if (XGetWindowAttributes(dzen.dpy, dzen.slave_win.win, &wa), wa.map_state != IsUnmapped
                                                                          /* autoscroll and redraw only if  we're
-				 * currently viewing the last line of input
-				 */
+		 * currently viewing the last line of input
+		 */
                                                                          &&
                                                                          (dzen.slave_win.last_line_vis == last_cnt)) {
             dzen.slave_win.first_line_vis = 0;
@@ -751,52 +765,7 @@ static void event_loop(void) {
     }
     return;
 }
-
-static void x_preload(const char *fontstr, int p) {
-    char *def, **missing;
-    int   i, n;
-
-    missing = NULL;
-
-    dzen.fnpl[p].set = XCreateFontSet(dzen.dpy, fontstr, &missing, &n, &def);
-    if (missing)
-        XFreeStringList(missing);
-
-    if (dzen.fnpl[p].set) {
-        XFontSetExtents *font_extents;
-        XFontStruct    **xfonts;
-        char           **font_names;
-        dzen.fnpl[p].ascent = dzen.fnpl[p].descent = 0;
-        font_extents                               = XExtentsOfFontSet(dzen.fnpl[p].set);
-        n                                          = XFontsOfFontSet(dzen.fnpl[p].set, &xfonts, &font_names);
-        for (i = 0, dzen.fnpl[p].ascent = 0, dzen.fnpl[p].descent = 0; i < n; i++) {
-            if (dzen.fnpl[p].ascent < (*xfonts)->ascent)
-                dzen.fnpl[p].ascent = (*xfonts)->ascent;
-            if (dzen.fnpl[p].descent < (*xfonts)->descent)
-                dzen.fnpl[p].descent = (*xfonts)->descent;
-            xfonts++;
-        }
-    } else {
-        if (dzen.fnpl[p].xfont)
-            XFreeFont(dzen.dpy, dzen.fnpl[p].xfont);
-        dzen.fnpl[p].xfont = NULL;
-        if (!(dzen.fnpl[p].xfont = XLoadQueryFont(dzen.dpy, fontstr)))
-            eprint("dzen: error, cannot load font: '%s'\n", fontstr);
-        dzen.fnpl[p].ascent  = dzen.fnpl[p].xfont->ascent;
-        dzen.fnpl[p].descent = dzen.fnpl[p].xfont->descent;
-    }
-    dzen.fnpl[p].height = dzen.fnpl[p].ascent + dzen.fnpl[p].descent;
-}
-
-static void font_preload(char *s) {
-    int   k   = 0;
-    char *buf = strtok(s, ",");
-    while (buf != NULL) {
-        if (k < 64)
-            x_preload(buf, k++);
-        buf = strtok(NULL, ",");
-    }
-}
+#endif
 
 /* Get alignment from character 'l'eft, 'r'ight and 'c'enter */
 static char alignment_from_char(char align) {
@@ -846,9 +815,13 @@ int main(int argc, char *argv[]) {
     dzen.line_height                            = 0;
     dzen.title_win.expand                       = noexpand;
 
-    /* Connect to X server */
+/* Connect to display system */
+#ifdef __APPLE__
+    macos_init();
+#else
     x_connect();
     x_read_resources();
+#endif
 
     /* cmdline args */
     for (i = 1; i < argc; i++)
@@ -858,7 +831,9 @@ int main(int argc, char *argv[]) {
                 if (dzen.slave_win.max_lines)
                     init_input_buffer();
             }
-        } else if (!strncmp(argv[i], "-geometry", 10)) {
+        }
+#ifndef __APPLE__
+        else if (!strncmp(argv[i], "-geometry", 10)) {
             if (++i < argc) {
                 int          t;
                 int          tx, ty;
@@ -879,7 +854,9 @@ int main(int argc, char *argv[]) {
                 if (t & HeightValue)
                     dzen.line_height = (signed int)th;
             }
-        } else if (!strncmp(argv[i], "-u", 3)) {
+        }
+#endif
+        else if (!strncmp(argv[i], "-u", 3)) {
             dzen.tsupdate = True;
         } else if (!strncmp(argv[i], "-expand", 8)) {
             if (++i < argc) {
@@ -905,7 +882,9 @@ int main(int argc, char *argv[]) {
                     dzen.timeout = 0;
                 else {
                     i++;
+#ifndef __APPLE__
                     start_timer(dzen.timeout);
+#endif
                 }
             }
         } else if (!strncmp(argv[i], "-ta", 4)) {
@@ -1004,8 +983,13 @@ int main(int argc, char *argv[]) {
     if (!dzen.title_win.width)
         dzen.title_win.width = dzen.slave_win.width;
 
+#ifndef __APPLE__
     if (!setlocale(LC_ALL, "") || !XSupportsLocale())
         puts("dzen: locale not available, expect problems with fonts.\n");
+#else
+    if (!setlocale(LC_ALL, ""))
+        puts("dzen: locale not available, expect problems with fonts.\n");
+#endif
 
     if (action_string)
         fill_ev_table(action_string);
@@ -1046,6 +1030,13 @@ int main(int argc, char *argv[]) {
     if (dzen.slave_win.ishmenu && !dzen.slave_win.max_lines)
         dzen.slave_win.max_lines = 1;
 
+    init_all_caches();
+
+#ifdef __APPLE__
+    macos_create_window();
+    macos_show_window();
+#else
+    font_init();
 #ifdef HAVE_XCURSOR
     dzen.cursor_arrow = XcursorLibraryLoadCursor(dzen.dpy, "left_ptr");
     dzen.cursor_hand  = XcursorLibraryLoadCursor(dzen.dpy, "hand2");
@@ -1053,8 +1044,6 @@ int main(int argc, char *argv[]) {
     dzen.cursor_arrow = XCreateFontCursor(dzen.dpy, XC_left_ptr);
     dzen.cursor_hand  = XCreateFontCursor(dzen.dpy, XC_hand2);
 #endif
-
-    init_all_caches();
     x_create_windows(use_ewmh_dock);
 
     if (!dzen.slave_win.ishmenu)
@@ -1064,6 +1053,7 @@ int main(int argc, char *argv[]) {
         for (i = 0; i < dzen.slave_win.max_lines; i++)
             XMapWindow(dzen.dpy, dzen.slave_win.line[i]);
     }
+#endif
 
     if (fnpre != NULL)
         font_preload(fnpre);
@@ -1071,7 +1061,11 @@ int main(int argc, char *argv[]) {
     do_action(onstart);
 
     /* main loop */
+#ifdef __APPLE__
+    macos_event_loop();
+#else
     event_loop();
+#endif
 
     do_action(onexit);
     clean_up();

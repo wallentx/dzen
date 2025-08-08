@@ -7,20 +7,40 @@ AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([foreign -Wall -Werror subdir-objects])
 
 AC_PROG_CC
+AC_PROG_OBJC
 AC_PROG_INSTALL
 
 # ---------------------------------------------
-#  Check for X11 (required); fail if missing
+#  Platform detection
 # ---------------------------------------------
-PKG_CHECK_MODULES([X11], [x11], [],
-  [AC_MSG_ERROR([*** X11 not found! Please install X11 development libraries.])])
-AC_SUBST([X11_CFLAGS])
-AC_SUBST([X11_LIBS])
-CPPFLAGS="$CPPFLAGS $X11_CFLAGS"
-LIBS="$LIBS $X11_LIBS"
+AC_CANONICAL_HOST
+case "${host_os}" in
+    darwin*)
+        MACOS_BUILD=yes
+        ;;
+    *)
+        MACOS_BUILD=no
+        ;;
+esac
+
+AM_CONDITIONAL([MACOS_BUILD], [test "x$MACOS_BUILD" = "xyes"])
+
+# ---------------------------------------------
+#  Check for X11 (required on non-macOS); fail if missing
+# ---------------------------------------------
+AS_IF([test "x$MACOS_BUILD" = "xno"], [
+    PKG_CHECK_MODULES([X11], [x11], [],
+      [AC_MSG_ERROR([*** X11 not found! Please install X11 development libraries.])])
+    AC_SUBST([X11_CFLAGS])
+    AC_SUBST([X11_LIBS])
+    CPPFLAGS="$CPPFLAGS $X11_CFLAGS"
+    LIBS="$LIBS $X11_LIBS"
+], [
+    AC_MSG_NOTICE([Building for macOS - skipping X11 checks])
+])
 
 # ============================================================
-#  XPM
+#  XPM (disabled on macOS)
 #  --enable-xpm => if not found => ERROR
 #  --disable-xpm => skip check, disabled
 #  default => check => if found => enable, else => disable
@@ -32,7 +52,9 @@ AC_ARG_ENABLE([xpm],
 )
 
 XPM_ENABLED="no"
-AS_IF([test "x$enable_xpm" = "xno"], [
+AS_IF([test "x$MACOS_BUILD" = "xyes"], [
+  AC_MSG_NOTICE([macOS build - XPM disabled])
+], [test "x$enable_xpm" = "xno"], [
   # --disable-xpm => do nothing, remain disabled
 ], [
   # --enable-xpm or "auto"
@@ -56,7 +78,7 @@ AS_IF([test "x$XPM_ENABLED" = "xyes"], [
 ])
 
 # ============================================================
-#  XFT
+#  XFT (disabled on macOS)
 # ============================================================
 AC_ARG_ENABLE([xft],
   [AS_HELP_STRING([--enable-xft],[Enable XFT (error if not found); default=auto])],
@@ -65,7 +87,9 @@ AC_ARG_ENABLE([xft],
 )
 
 XFT_ENABLED="no"
-AS_IF([test "x$enable_xft" = "xno"], [
+AS_IF([test "x$MACOS_BUILD" = "xyes"], [
+  AC_MSG_NOTICE([macOS build - XFT disabled])
+], [test "x$enable_xft" = "xno"], [
   # disabled
 ], [
   PKG_CHECK_MODULES([XFT], [xft],
@@ -89,7 +113,7 @@ AS_IF([test "x$XFT_ENABLED" = "xyes"], [
 ])
 
 # ============================================================
-#  XCursor
+#  XCursor (disabled on macOS)
 # ============================================================
 AC_ARG_ENABLE([xcursor],
   [AS_HELP_STRING([--enable-xcursor],[Enable XCursor (error if not found); default=auto])],
@@ -98,7 +122,9 @@ AC_ARG_ENABLE([xcursor],
 )
 
 XCURSOR_ENABLED="no"
-AS_IF([test "x$enable_xcursor" = "xno"], [
+AS_IF([test "x$MACOS_BUILD" = "xyes"], [
+  AC_MSG_NOTICE([macOS build - XCursor disabled])
+], [test "x$enable_xcursor" = "xno"], [
   # disabled
 ], [
   PKG_CHECK_MODULES([XCURSOR], [xcursor],
@@ -122,7 +148,7 @@ AS_IF([test "x$XCURSOR_ENABLED" = "xyes"], [
 ])
 
 # ============================================================
-#  Xinerama
+#  Xinerama (disabled on macOS)
 # ============================================================
 AC_ARG_ENABLE([xinerama],
   [AS_HELP_STRING([--enable-xinerama],[Enable Xinerama (error if not found); default=auto])],
@@ -131,7 +157,9 @@ AC_ARG_ENABLE([xinerama],
 )
 
 XINERAMA_ENABLED="no"
-AS_IF([test "x$enable_xinerama" = "xno"], [
+AS_IF([test "x$MACOS_BUILD" = "xyes"], [
+  AC_MSG_NOTICE([macOS build - Xinerama disabled])
+], [test "x$enable_xinerama" = "xno"], [
   # disabled
 ], [
   PKG_CHECK_MODULES([XINERAMA], [xinerama],
@@ -174,6 +202,8 @@ AS_IF([test "x$enable_gadgets" = "xyes"], [
 # ----------------------------------------------------------
 AC_MSG_NOTICE([
 --------------------------------------------
+  Platform:    ${host_os}
+  macOS build: $MACOS_BUILD
   XPM:         $XPM_ENABLED
   XFT:         $XFT_ENABLED
   XCursor:     $XCURSOR_ENABLED

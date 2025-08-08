@@ -3,6 +3,8 @@
            (c) 2025 by Olexandr Sydorchuk
     ====================================
 
+**Note:** This is a Mac-focused fork of dzen2 that includes native macOS support using CoreGraphics and Cocoa frameworks, alongside the original X11/Linux functionality. Since the upstream robm/dzen repository is not actively maintained, this fork exists as an independent project.
+
 Dzen is a general purpose messaging, notification and menuing program for X11.
 It was designed to be fast, tiny and scriptable in any language.
 

@@ -1,12 +1,65 @@
+#ifdef __APPLE__
+/*
+ * macOS-specific drawing implementation for dzen2
+ */
+#include "dzen.h"
+#include "action.h"
+#include "font.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/* Dummy implementations for macOS, to be filled in */
+
+unsigned int textw(const char *text) {
+    if (!text)
+        return 0;
+    return textnw(&dzen.font, text, strlen(text));
+}
+
+void drawtext(const char *text, int reverse, int line, int align) {
+    // TODO: macOS implementation
+    (void)text;
+    (void)reverse;
+    (void)line;
+    (void)align;
+}
+
+char *parse_line(const char *line, int lnr, int align, int reverse, int nodraw) {
+    // TODO: macOS implementation
+    (void)line;
+    (void)lnr;
+    (void)align;
+    (void)reverse;
+    if (nodraw) {
+        return strdup("");
+    }
+    return NULL;
+}
+
+void drawheader(const char *text) {
+    // TODO: macOS implementation
+    if (text) {
+        macos_update_display_text(text);
+    }
+}
+
+void drawbody(char *text) {
+    // For now, treat body text as header text
+    drawheader(text);
+}
+
+#else
 /*
 * (C)opyright 2007-2009 Robert Manea <rob dot manea at gmail dot com>
 * See LICENSE file for license details.
-*
+* 
 */
 
 #include "dzen.h"
 #include "action.h"
+#include "font.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -86,26 +139,6 @@ struct command_lookup cmd_lookup_table[] = {
 /* positioning helpers */
 enum sctype { LOCK_X, UNLOCK_X, TOP, BOTTOM, CENTER, LEFT, RIGHT };
 
-int get_tokval(const char *line, char **retdata);
-int get_token(const char *line, int *t, char **tval);
-
-static unsigned int textnw(Fnt *font, const char *text, unsigned int len) {
-#ifndef HAVE_XFT
-    XRectangle r;
-
-    if (font->set) {
-        XmbTextExtents(font->set, text, len, NULL, &r);
-        return r.width;
-    }
-    return XTextWidth(font->xfont, text, len);
-#else
-    XftTextExtentsUtf8(dzen.dpy, dzen.font.xftfont, (unsigned const char *)text, strlen(text), &dzen.font.extents);
-    if (dzen.font.extents.height > dzen.font.height)
-        dzen.font.height = dzen.font.extents.height;
-    return dzen.font.extents.xOff;
-#endif
-}
-
 void drawtext(const char *text, int reverse, int line, int align) {
     if (!reverse) {
         XSetForeground(dzen.dpy, dzen.gc, dzen.norm[ColBG]);
@@ -118,110 +151,6 @@ void drawtext(const char *text, int reverse, int line, int align) {
     }
 
     parse_line(text, line, align, reverse, 0);
-}
-
-/* Shared cache structure */
-typedef struct Cache {
-    char         *key;
-    void         *value;
-    struct Cache *next;
-} Cache;
-
-Cache *font_cache  = NULL;
-Cache *color_cache = NULL;
-
-void *get_cached_value(Cache **cache, const char *key) {
-    Cache *current = *cache;
-    while (current) {
-        if (strcmp(current->key, key) == 0) {
-            return current->value;
-        }
-        current = current->next;
-    }
-    return NULL;
-}
-
-void add_to_cache(Cache **cache, const char *key, void *value) {
-    Cache *new_entry = malloc(sizeof(Cache));
-    new_entry->key   = strdup(key);
-    new_entry->value = value;
-    new_entry->next  = *cache;
-    *cache           = new_entry;
-}
-
-XftFont *get_cached_font(Display *display, int screen, const char *font_name) {
-    XftFont *font = get_cached_value(&font_cache, font_name);
-    if (!font) {
-        font = XftFontOpenName(display, screen, font_name);
-        if (font) {
-            add_to_cache(&font_cache, font_name, font);
-        }
-    }
-    return font;
-}
-
-void free_cache(Cache **cache) {
-    Cache *current = *cache;
-    while (current) {
-        Cache *next = current->next;
-        free(current->key);
-        free(current->value);
-        free(current);
-        current = next;
-    }
-    *cache = NULL;
-}
-
-void setfont(const char *fontstr) {
-#ifndef HAVE_XFT
-    char *def, **missing;
-    int   i, n;
-
-    missing = NULL;
-    if (dzen.font.set)
-        XFreeFontSet(dzen.dpy, dzen.font.set);
-
-    dzen.font.set = XCreateFontSet(dzen.dpy, fontstr, &missing, &n, &def);
-    if (missing)
-        XFreeStringList(missing);
-
-    if (dzen.font.set) {
-        XFontSetExtents *font_extents;
-        XFontStruct    **xfonts;
-        char           **font_names;
-        dzen.font.ascent = dzen.font.descent = 0;
-        font_extents                         = XExtentsOfFontSet(dzen.font.set);
-        n                                    = XFontsOfFontSet(dzen.font.set, &xfonts, &font_names);
-        for (i = 0, dzen.font.ascent = 0, dzen.font.descent = 0; i < n; i++) {
-            if (dzen.font.ascent < (*xfonts)->ascent)
-                dzen.font.ascent = (*xfonts)->ascent;
-            if (dzen.font.descent < (*xfonts)->descent)
-                dzen.font.descent = (*xfonts)->descent;
-            xfonts++;
-        }
-    } else {
-        if (dzen.font.xfont)
-            XFreeFont(dzen.dpy, dzen.font.xfont);
-        dzen.font.xfont = NULL;
-        if (!(dzen.font.xfont = XLoadQueryFont(dzen.dpy, fontstr)))
-            eprint("dzen: error, cannot load font: '%s'\n", fontstr);
-        dzen.font.ascent  = dzen.font.xfont->ascent;
-        dzen.font.descent = dzen.font.xfont->descent;
-    }
-    dzen.font.height = dzen.font.ascent + dzen.font.descent;
-#else
-    if (dzen.font.xftfont)
-        XftFontClose(dzen.dpy, dzen.font.xftfont);
-
-    dzen.font.xftfont = get_cached_font(dzen.dpy, dzen.screen, fontstr);
-    if (!dzen.font.xftfont)
-        eprint("error, cannot load font: '%s'\n", fontstr);
-
-    XftTextExtentsUtf8(dzen.dpy, dzen.font.xftfont, (unsigned const char *)fontstr, strlen(fontstr),
-                       &dzen.font.extents);
-    dzen.font.height = dzen.font.xftfont->ascent + dzen.font.xftfont->descent;
-    dzen.font.width  = (dzen.font.extents.width) / strlen(fontstr);
-#endif
 }
 
 int get_tokval(const char *line, char **retdata) {
@@ -1107,3 +1036,4 @@ void drawbody(char *text) {
         dzen.slave_win.tcnt++;
     }
 }
+#endif

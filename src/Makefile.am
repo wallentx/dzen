@@ -10,12 +10,25 @@ dzen2_SOURCES = \
   caches.c \
   draw.c \
   dzen.h \
+  font.c \
+  font.h \
   kvstore.c \
   kvstore.h \
   main.c \
   util.c
 
+# Add macOS-specific source when building on Apple platforms
+if MACOS_BUILD
+dzen2_SOURCES += macos.m
+endif
+
 # We can add extra CFLAGS or LIBS if needed, e.g.
 
 dzen2_CPPFLAGS = $(CPPFLAGS)
 dzen2_LDADD    = $(LIBS)
+
+# macOS-specific flags
+if MACOS_BUILD
+dzen2_LDFLAGS = -framework Cocoa -framework CoreGraphics -framework CoreText
+dzen2_CPPFLAGS += -D__APPLE__
+endif

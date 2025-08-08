@@ -10,6 +10,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef __APPLE__
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/keysym.h>
+#endif
+
 struct event_lookup ev_lookup_table[] = {
     { "onstart", onstart },       { "onexit", onexit },         { "onnewinput", onnewinput },
     { "button1", button1 },       { "button2", button2 },       { "button3", button3 },
@@ -139,13 +145,15 @@ void do_action(long evid) {
 }
 
 int get_ev_id(const char *evname) {
-    int    i;
+    int i;
+#ifndef __APPLE__
     KeySym ks;
 
     /* check for keyboard event */
     if ((!strncmp(evname, "key_", 4)) && ((ks = XStringToKeysym(evname + 4)) != NoSymbol)) {
         return ks + keymarker;
     }
+#endif
 
     /* own events */
     for (i = 0; ev_lookup_table[i].name; i++) {
@@ -239,33 +247,42 @@ int a_exit(char *opt[]) {
 
 int a_collapse(char *opt[]) {
     (void)opt;
+#ifndef __APPLE__
     if (!dzen.slave_win.ishmenu && dzen.slave_win.max_lines && !dzen.slave_win.issticky) {
         XUnmapWindow(dzen.dpy, dzen.slave_win.win);
     }
+#endif
     return 0;
 }
 
 int a_uncollapse(char *opt[]) {
+#ifndef __APPLE__
     int i;
+#endif
     (void)opt;
+#ifndef __APPLE__
     if (!dzen.slave_win.ishmenu && dzen.slave_win.max_lines && !dzen.slave_win.issticky) {
         XMapRaised(dzen.dpy, dzen.slave_win.win);
         for (i = 0; i < dzen.slave_win.max_lines; i++)
             XMapWindow(dzen.dpy, dzen.slave_win.line[i]);
     }
+#endif
     return 0;
 }
 
 int a_togglecollapse(char *opt[]) {
+#ifndef __APPLE__
     XWindowAttributes wa;
+#endif
     (void)opt;
 
+#ifndef __APPLE__
     if (dzen.slave_win.max_lines &&
         (XGetWindowAttributes(dzen.dpy, dzen.slave_win.win, &wa), wa.map_state == IsUnmapped))
         a_uncollapse(NULL);
     else
         a_collapse(NULL);
-
+#endif
     return 0;
 }
 
@@ -304,7 +321,11 @@ static void scroll(int n) {
         dzen.slave_win.last_line_vis += n;
     }
 
+#ifdef __APPLE__
+    macos_draw_body();
+#else
     x_draw_body();
+#endif
 }
 
 int a_scrollup(char *opt[]) {
@@ -330,15 +351,16 @@ int a_scrolldown(char *opt[]) {
 }
 
 int a_hide(char *opt[]) {
-    int n = 1;
-
-    printf("n:%d\n", n);
+    (void)opt;
     if (!dzen.title_win.ishidden) {
+#ifdef __APPLE__
+        macos_hide_window();
+#else
         if (!dzen.slave_win.ishmenu)
             XResizeWindow(dzen.dpy, dzen.title_win.win, dzen.title_win.width, 1);
         else
             XResizeWindow(dzen.dpy, dzen.slave_win.win, dzen.title_win.width, 1);
-
+#endif
         dzen.title_win.ishidden = True;
     }
     return 0;
@@ -347,11 +369,14 @@ int a_hide(char *opt[]) {
 int a_unhide(char *opt[]) {
     (void)opt;
     if (dzen.title_win.ishidden) {
+#ifdef __APPLE__
+        macos_show_window();
+#else
         if (!dzen.slave_win.ishmenu)
             XResizeWindow(dzen.dpy, dzen.title_win.win, dzen.title_win.width, dzen.line_height);
         else
             XResizeWindow(dzen.dpy, dzen.slave_win.win, dzen.title_win.width, dzen.line_height);
-
+#endif
         dzen.title_win.ishidden = False;
     }
     return 0;
@@ -434,19 +459,23 @@ int a_menuexec(char *opt[]) {
 
 int a_raise(char *opt[]) {
     (void)opt;
+#ifndef __APPLE__
     XRaiseWindow(dzen.dpy, dzen.title_win.win);
 
     if (dzen.slave_win.max_lines)
         XRaiseWindow(dzen.dpy, dzen.slave_win.win);
+#endif
     return 0;
 }
 
 int a_lower(char *opt[]) {
     (void)opt;
+#ifndef __APPLE__
     XLowerWindow(dzen.dpy, dzen.title_win.win);
 
     if (dzen.slave_win.max_lines)
         XLowerWindow(dzen.dpy, dzen.slave_win.win);
+#endif
     return 0;
 }
 
@@ -456,7 +485,11 @@ int a_scrollhome(char *opt[]) {
         dzen.slave_win.first_line_vis = 0;
         dzen.slave_win.last_line_vis  = dzen.slave_win.max_lines;
 
+#ifdef __APPLE__
+        macos_draw_body();
+#else
         x_draw_body();
+#endif
     }
     return 0;
 }
@@ -467,32 +500,44 @@ int a_scrollend(char *opt[]) {
         dzen.slave_win.first_line_vis = dzen.slave_win.tcnt - dzen.slave_win.max_lines;
         dzen.slave_win.last_line_vis  = dzen.slave_win.tcnt;
 
+#ifdef __APPLE__
+        macos_draw_body();
+#else
         x_draw_body();
+#endif
     }
     return 0;
 }
 
 int a_grabkeys(char *opt[]) {
     (void)opt;
+#ifndef __APPLE__
     XGrabKeyboard(dzen.dpy, RootWindow(dzen.dpy, dzen.screen), True, GrabModeAsync, GrabModeAsync, CurrentTime);
+#endif
     return 0;
 }
 
 int a_ungrabkeys(char *opt[]) {
     (void)opt;
+#ifndef __APPLE__
     XUngrabKeyboard(dzen.dpy, CurrentTime);
+#endif
     return 0;
 }
 
 int a_grabmouse(char *opt[]) {
     (void)opt;
+#ifndef __APPLE__
     XGrabPointer(dzen.dpy, RootWindow(dzen.dpy, dzen.screen), True, ButtonReleaseMask, GrabModeAsync, GrabModeAsync,
                  None, None, CurrentTime);
+#endif
     return 0;
 }
 
 int a_ungrabmouse(char *opt[]) {
     (void)opt;
+#ifndef __APPLE__
     XUngrabPointer(dzen.dpy, CurrentTime);
+#endif
     return 0;
 }
