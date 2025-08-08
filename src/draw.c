@@ -874,71 +874,71 @@ int parse_non_drawing_commands(char *text) {
     if (!text)
         return 1;
 
-    if (!strncmp(text, "^togglecollapse()", strlen("^togglecollapse()\n"))) {
+    if (!strncmp(text, "^togglecollapse()", strlen("^togglecollapse()"))) {
         a_togglecollapse(NULL);
         return 0;
     }
-    if (!strncmp(text, "^collapse()", strlen("^collapse()\n"))) {
+    if (!strncmp(text, "^collapse()", strlen("^collapse()"))) {
         a_collapse(NULL);
         return 0;
     }
-    if (!strncmp(text, "^uncollapse()", strlen("^uncollapse()\n"))) {
+    if (!strncmp(text, "^uncollapse()", strlen("^uncollapse()"))) {
         a_uncollapse(NULL);
         return 0;
     }
 
-    if (!strncmp(text, "^togglestick()", strlen("^togglestick()\n"))) {
+    if (!strncmp(text, "^togglestick()", strlen("^togglestick()"))) {
         a_togglestick(NULL);
         return 0;
     }
-    if (!strncmp(text, "^stick()", strlen("^stick()\n"))) {
+    if (!strncmp(text, "^stick()", strlen("^stick()"))) {
         a_stick(NULL);
         return 0;
     }
-    if (!strncmp(text, "^unstick()", strlen("^unstick()\n"))) {
+    if (!strncmp(text, "^unstick()", strlen("^unstick()"))) {
         a_unstick(NULL);
         return 0;
     }
 
-    if (!strncmp(text, "^togglehide()", strlen("^togglehide()\n"))) {
+    if (!strncmp(text, "^togglehide()", strlen("^togglehide()"))) {
         a_togglehide(NULL);
         return 0;
     }
-    if (!strncmp(text, "^hide()", strlen("^hide()\n"))) {
+    if (!strncmp(text, "^hide()", strlen("^hide()"))) {
         a_hide(NULL);
         return 0;
     }
-    if (!strncmp(text, "^unhide()", strlen("^unhide()\n"))) {
+    if (!strncmp(text, "^unhide()", strlen("^unhide()"))) {
         a_unhide(NULL);
         return 0;
     }
 
-    if (!strncmp(text, "^raise()", strlen("^raise()\n"))) {
+    if (!strncmp(text, "^raise()", strlen("^raise()"))) {
         a_raise(NULL);
         return 0;
     }
 
-    if (!strncmp(text, "^lower()", strlen("^lower()\n"))) {
+    if (!strncmp(text, "^lower()", strlen("^lower()"))) {
         a_lower(NULL);
         return 0;
     }
 
-    if (!strncmp(text, "^scrollhome()", strlen("^scrollhome()\n"))) {
+    if (!strncmp(text, "^scrollhome()", strlen("^scrollhome()"))) {
         a_scrollhome(NULL);
         return 0;
     }
 
-    if (!strncmp(text, "^scrollend()", strlen("^scrollend()\n"))) {
+    if (!strncmp(text, "^scrollend()", strlen("^scrollend()"))) {
         a_scrollend(NULL);
         return 0;
     }
 
-    if (!strncmp(text, "^exit()", strlen("^exit()\n"))) {
+    if (!strncmp(text, "^exit()", strlen("^exit()"))) {
         a_exit(NULL);
         return 0;
     }
 
-    if (!strncmp(text, "^normfg(", strlen("^normfg(\n"))) {
+    if (!strncmp(text, "^normfg(", strlen("^normfg("))) {
         char *tval = extract_between_parentheses(text);
         if (tval) {
             if ((dzen.norm[ColFG] = get_color(tval)) == ~0lu)
@@ -953,7 +953,7 @@ int parse_non_drawing_commands(char *text) {
         return 0;
     }
 
-    if (!strncmp(text, "^normbg(", strlen("^normbg(\n"))) {
+    if (!strncmp(text, "^normbg(", strlen("^normbg("))) {
         char *tval = extract_between_parentheses(text);
         if (tval) {
             if ((dzen.norm[ColBG] = get_color(tval)) == ~0lu)
@@ -968,7 +968,7 @@ int parse_non_drawing_commands(char *text) {
         return 0;
     }
 
-    if (!strncmp(text, "^normfn(", strlen("^normfn(\n"))) {
+    if (!strncmp(text, "^normfn(", strlen("^normfn("))) {
         char *tval = extract_between_parentheses(text);
         if (tval) {
             free((char *)dzen.fnt);
