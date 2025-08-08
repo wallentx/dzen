@@ -1,22 +1,115 @@
-/*
- * (C)opyright 2025 Olexandr Sydorchuk
- * See LICENSE file for license details.
- *
- * Font management module for dzen2
- */
-
 #include "font.h"
 #include "dzen.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef __APPLE__
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#ifdef HAVE_XFT
+#include <X11/Xft/Xft.h>
+#endif
+#endif
+
 #define FONT "-*-fixed-*-*-*-*-*-*-*-*-*-*-*-*"
 
-/* External references */
 extern Dzen dzen;
 extern void eprint(const char *errstr, ...);
+
+#ifdef __APPLE__
+
+void font_init(void) {
+    dzen.font.ctfont = NULL;
+}
+
+void font_cleanup(void) {
+    if (dzen.font.ctfont) {
+        CFRelease(dzen.font.ctfont);
+    }
+}
+
+unsigned int textnw(Fnt *font, const char *text, unsigned int len) {
+    if (!font || !font->ctfont || !text || len == 0)
+        return 0;
+
+    CFStringRef string =
+        CFStringCreateWithBytes(kCFAllocatorDefault, (const UInt8 *)text, len, kCFStringEncodingUTF8, false);
+    if (!string)
+        return 0;
+
+    CFDictionaryRef attributes = CFDictionaryCreate(kCFAllocatorDefault, (const void **)&kCTFontAttributeName,
+                                                    (const void **)&font->ctfont, 1, &kCFTypeDictionaryKeyCallBacks,
+                                                    &kCFTypeDictionaryValueCallBacks);
+    if (!attributes) {
+        CFRelease(string);
+        return 0;
+    }
+
+    CFAttributedStringRef attrString = CFAttributedStringCreate(kCFAllocatorDefault, string, attributes);
+    CFRelease(string);
+    CFRelease(attributes);
+
+    if (!attrString)
+        return 0;
+
+    CTLineRef line = CTLineCreateWithAttributedString(attrString);
+    CFRelease(attrString);
+
+    if (!line)
+        return 0;
+
+    double width = CTLineGetTypographicBounds(line, NULL, NULL, NULL);
+    CFRelease(line);
+
+    return (unsigned int)width;
+}
+
+void setfont(const char *fontstr) {
+    if (dzen.font.ctfont) {
+        CFRelease(dzen.font.ctfont);
+        dzen.font.ctfont = NULL;
+    }
+
+    // For macOS, we'll parse a simpler font string format: "Family-Size"
+    // e.g., "Monaco-12"
+    char   family_name[128] = "Monaco"; // Default
+    double font_size        = 12.0; // Default
+
+    if (fontstr) {
+        const char *dash = strrchr(fontstr, '-');
+        if (dash) {
+            strncpy(family_name, fontstr, dash - fontstr);
+            family_name[dash - fontstr] = '\0';
+            font_size                   = atof(dash + 1);
+        }
+    }
+
+    CFStringRef fontNameRef = CFStringCreateWithCString(NULL, family_name, kCFStringEncodingUTF8);
+    dzen.font.ctfont        = CTFontCreateWithName(fontNameRef, font_size, NULL);
+    CFRelease(fontNameRef);
+
+    if (!dzen.font.ctfont) {
+        eprint("dzen: error, cannot load font: '%s'\n", fontstr);
+    }
+
+    dzen.font.ascent  = CTFontGetAscent(dzen.font.ctfont);
+    dzen.font.descent = CTFontGetDescent(dzen.font.ctfont);
+    dzen.font.height  = dzen.font.ascent + dzen.font.descent;
+}
+
+void font_preload_single(const char *fontstr, int p) {
+    // Not implemented for macOS
+    (void)fontstr;
+    (void)p;
+}
+
+void font_preload(char *s) {
+    // Not implemented for macOS
+    (void)s;
+}
+
+#else /* X11 implementation */
 
 #ifdef HAVE_XFT
 /* Shared cache structure for font caching */
@@ -212,3 +305,10 @@ void font_preload(char *s) {
     }
 #endif
 }
+
+unsigned int textw(const char *text) {
+    if (!text)
+        return 0;
+    return textnw(&dzen.font, text, strlen(text));
+}
+#endif

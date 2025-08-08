@@ -58,6 +58,9 @@ jobs:
         run: |
           make
 
+      - name: Ensure ImageMagick is installed
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
+
       # Start the Xvfb (Virtual Framebuffer)
       - name: Start Xvfb (Virtual Framebuffer)
         run: |

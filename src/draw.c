@@ -1,8 +1,60 @@
+#ifdef __APPLE__
+/*
+ * macOS-specific drawing implementation for dzen2
+ */
+#include "dzen.h"
+#include "action.h"
+#include "font.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/* Dummy implementations for macOS, to be filled in */
+
+unsigned int textw(const char *text) {
+    if (!text)
+        return 0;
+    return textnw(&dzen.font, text, strlen(text));
+}
+
+void drawtext(const char *text, int reverse, int line, int align) {
+    // TODO: macOS implementation
+    (void)text;
+    (void)reverse;
+    (void)line;
+    (void)align;
+}
+
+char *parse_line(const char *line, int lnr, int align, int reverse, int nodraw) {
+    // TODO: macOS implementation
+    (void)line;
+    (void)lnr;
+    (void)align;
+    (void)reverse;
+    if (nodraw) {
+        return strdup("");
+    }
+    return NULL;
+}
+
+void drawheader(const char *text) {
+    // TODO: macOS implementation
+    if (text) {
+        macos_update_display_text(text);
+    }
+}
+
+void drawbody(char *text) {
+    // For now, treat body text as header text
+    drawheader(text);
+}
+
+#else
 /*
 * (C)opyright 2007-2009 Robert Manea <rob dot manea at gmail dot com>
 * See LICENSE file for license details.
-*
+* 
 */
 
 #include "dzen.h"
@@ -87,9 +139,6 @@ struct command_lookup cmd_lookup_table[] = {
 /* positioning helpers */
 enum sctype { LOCK_X, UNLOCK_X, TOP, BOTTOM, CENTER, LEFT, RIGHT };
 
-int get_tokval(const char *line, char **retdata);
-int get_token(const char *line, int *t, char **tval);
-
 void drawtext(const char *text, int reverse, int line, int align) {
     if (!reverse) {
         XSetForeground(dzen.dpy, dzen.gc, dzen.norm[ColBG]);
@@ -102,46 +151,6 @@ void drawtext(const char *text, int reverse, int line, int align) {
     }
 
     parse_line(text, line, align, reverse, 0);
-}
-
-/* Shared cache structure for color cache */
-typedef struct Cache {
-    char         *key;
-    void         *value;
-    struct Cache *next;
-} Cache;
-
-Cache *color_cache = NULL;
-
-void *get_cached_value(Cache **cache, const char *key) {
-    Cache *current = *cache;
-    while (current) {
-        if (strcmp(current->key, key) == 0) {
-            return current->value;
-        }
-        current = current->next;
-    }
-    return NULL;
-}
-
-void add_to_cache(Cache **cache, const char *key, void *value) {
-    Cache *new_entry = malloc(sizeof(Cache));
-    new_entry->key   = strdup(key);
-    new_entry->value = value;
-    new_entry->next  = *cache;
-    *cache           = new_entry;
-}
-
-void free_cache(Cache **cache) {
-    Cache *current = *cache;
-    while (current) {
-        Cache *next = current->next;
-        free(current->key);
-        free(current->value);
-        free(current);
-        current = next;
-    }
-    *cache = NULL;
 }
 
 int get_tokval(const char *line, char **retdata) {
@@ -1027,3 +1036,4 @@ void drawbody(char *text) {
         dzen.slave_win.tcnt++;
     }
 }
+#endif

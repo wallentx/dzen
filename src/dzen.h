@@ -7,6 +7,12 @@
 #include "../config.h"
 #include "font.h"
 
+#ifdef __APPLE__
+/* macOS includes */
+#include <CoreGraphics/CoreGraphics.h>
+#include <CoreText/CoreText.h>
+#else
+/* X11 includes */
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xresource.h>
@@ -23,11 +29,24 @@
 #ifdef HAVE_XPM
 #include <X11/xpm.h>
 #endif
+#endif /* __APPLE__ */
 
 #define FONT     "-*-fixed-*-*-*-*-*-*-*-*-*-*-*-*"
 #define BGCOLOR  "#111111"
 #define FGCOLOR  "grey70"
 #define ESC_CHAR '^'
+
+#ifdef __APPLE__
+/* macOS compatibility definitions */
+#define Bool                         bool
+#define True                         true
+#define False                        false
+#define DefaultScreen(dpy)           0
+#define DefaultVisual(dpy, screen)   NULL
+#define DefaultColormap(dpy, screen) NULL
+#else
+/* X11 already provides these */
+#endif
 
 #define ALIGNCENTER 0
 #define ALIGNLEFT   1
@@ -61,6 +80,12 @@ typedef struct SW     SWIN;
 typedef struct _Sline Sline;
 
 typedef struct {
+#ifdef __APPLE__
+    CGImageRef   image;
+    unsigned int w;
+    unsigned int h;
+    Bool         is_xbm;
+#else
     Pixmap       pm;
     unsigned int w;
     unsigned int h;
@@ -71,18 +96,23 @@ typedef struct {
     /* Possibly track a flag to know if we actually had to allocate colormap cells */
     XpmAttributes xpma;
 #endif
+#endif /* __APPLE__ */
 } Icon;
 
 /* clickable areas */
 typedef struct _CLICK_A {
-    int    active;
-    int    button;
-    int    start_x;
-    int    end_x;
-    int    start_y;
-    int    end_y;
+    int active;
+    int button;
+    int start_x;
+    int end_x;
+    int start_y;
+    int end_y;
+#ifdef __APPLE__
+    void *win; /* NSWindow* for macOS */
+#else
     Window win; //(line)window to which the action is attached
-    char   cmd[1024];
+#endif
+    char cmd[1024];
 } click_a;
 
 typedef struct _SENS_PER_WINDOW {
@@ -97,23 +127,34 @@ extern sens_w window_sens[2];
 struct TW {
     int x, y, width, height;
 
-    char    *name;
+    char *name;
+#ifdef __APPLE__
+    void *win; /* NSWindow* */
+    void *drawable; /* CGContextRef or similar */
+#else
     Window   win;
     Drawable drawable;
-    char     alignment;
-    int      expand;
-    int      x_right_corner;
-    Bool     ishidden;
+#endif
+    char alignment;
+    int  expand;
+    int  x_right_corner;
+    Bool ishidden;
 };
 
 /* slave window */
 struct SW {
     int x, y, width, height;
 
-    char     *name;
+    char *name;
+#ifdef __APPLE__
+    void  *win; /* NSWindow* */
+    void **line; /* Array of NSWindow* pointers */
+    void **drawable; /* Array of CGContextRef or similar */
+#else
     Window    win;
     Window   *line;
     Drawable *drawable;
+#endif
 
     /* input buffer */
     char **tbuf;
@@ -142,13 +183,15 @@ struct DZEN {
     TWIN title_win;
     SWIN slave_win;
 
+#ifdef __APPLE__
+    /* macOS-specific members */
+    void           *app; /* NSApplication* */
+    CGColorRef      bg_color;
+    CGColorRef      fg_color;
+    CGColorSpaceRef colorspace;
+#else
     /* sensitive areas */
     Window sa_win;
-
-    const char *fnt;
-    const char *bg;
-    const char *fg;
-    int         line_height;
 
     Display     *dpy;
     int          screen;
@@ -156,8 +199,15 @@ struct DZEN {
 
     Visual *visual;
     GC      gc, rgc, tgc;
-    Fnt     font; /* Font management handled by font.c */
-    Fnt     fnpl[64]; /* Font preload pool handled by font.c */
+#endif
+
+    const char *fnt;
+    const char *bg;
+    const char *fg;
+    int         line_height;
+
+    Fnt font;
+    Fnt fnpl[64];
 
     Bool          ispersistent;
     Bool          tsupdate;
@@ -169,20 +219,40 @@ struct DZEN {
     /* should always be 0 if HAVE_XINERAMA not defined */
     int xinescreen;
 
+#ifndef __APPLE__
     Cursor cursor_arrow;
     Cursor cursor_hand;
+#endif
 };
 
 extern Dzen dzen;
 
 void free_buffer(void);
+#ifdef __APPLE__
+void macos_draw_body(void);
+#else
 void x_draw_body(void);
+#endif
 
 /* draw.c */
 extern void  drawtext(const char *text, int reverse, int line, int align);
 extern char *parse_line(const char *text, int linenr, int align, int reverse, int nodraw);
 extern void  drawheader(const char *text);
 extern void  drawbody(char *text);
+
+#ifdef __APPLE__
+/* macOS-specific functions */
+extern void       macos_init(void);
+extern void       macos_cleanup(void);
+extern void       macos_create_window(void);
+extern void       macos_event_loop(void);
+extern CGColorRef macos_get_color(const char *str);
+extern void       macos_set_window_position(int x, int y);
+extern void       macos_show_window(void);
+extern void       macos_hide_window(void);
+extern void       macos_update_display_text(const char *text);
+extern void       macos_update_colors(void);
+#endif
 
 /* util.c */
 extern void *emalloc(unsigned int size); /* allocates memory, exits on error */

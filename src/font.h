@@ -10,19 +10,28 @@
 #define FONT_H
 
 #include "../config.h"
+
+#ifdef __APPLE__
+#include <ApplicationServices/ApplicationServices.h>
+#include <CoreText/CoreText.h>
+#else
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-
 #ifdef HAVE_XFT
 #include <X11/Xft/Xft.h>
 #endif
+#endif
 
 typedef struct Fnt {
+#ifdef __APPLE__
+    CTFontRef ctfont;
+#else
     XFontStruct *xfont;
     XFontSet     set;
-    int          ascent;
-    int          descent;
-    int          height;
+#endif
+    int ascent;
+    int descent;
+    int height;
 #ifdef HAVE_XFT
     XftFont   *xftfont;
     XGlyphInfo extents;
@@ -35,6 +44,7 @@ void         font_init(void);
 void         font_cleanup(void);
 void         setfont(const char *fontstr);
 unsigned int textnw(Fnt *font, const char *text, unsigned int len);
+unsigned int textw(const char *text);
 
 /* Font preloading functions */
 void font_preload(char *s);
